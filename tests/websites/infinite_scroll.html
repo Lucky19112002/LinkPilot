@@ -1,0 +1,19 @@
+<!doctype html>
+<title>Infinite Scroll</title>
+<h1>Feed</h1>
+<div id="items"></div>
+<script>
+let count = 0;
+function add() {
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement("p");
+    p.textContent = "Item " + (++count);
+    p.style.height = "70px";
+    items.appendChild(p);
+  }
+}
+add();
+addEventListener("scroll", () => {
+  if (innerHeight + scrollY >= document.body.offsetHeight - 100) add();
+});
+</script>

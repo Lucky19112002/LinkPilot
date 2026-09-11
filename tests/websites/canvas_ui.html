@@ -1,0 +1,18 @@
+<!doctype html>
+<title>Canvas UI</title>
+<canvas id="app" width="900" height="500"></canvas>
+<p id="result"></p>
+<script>
+const c = document.querySelector("#app");
+const ctx = c.getContext("2d");
+ctx.fillStyle = "#15803d";
+ctx.fillRect(360, 210, 180, 70);
+ctx.fillStyle = "white";
+ctx.font = "28px sans-serif";
+ctx.fillText("Continue", 395, 255);
+c.addEventListener("click", e => {
+  if (e.offsetX >= 360 && e.offsetX <= 540 && e.offsetY >= 210 && e.offsetY <= 280) {
+    document.querySelector("#result").textContent = "Account created successfully";
+  }
+});
+</script>

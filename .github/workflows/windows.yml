@@ -1,0 +1,29 @@
+name: Windows Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m venv .venv
+      - shell: bash
+        run: bash build/security_audit.sh
+      - run: build\build_windows.bat
+      - run: .venv\Scripts\python.exe -m pytest --cov=. --cov-report=xml tests/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LinkPilot-Windows
+          path: |
+            dist/LinkPilot.exe
+            dist/LinkPilot-Setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-windows
+          path: coverage.xml

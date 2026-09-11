@@ -1,0 +1,13 @@
+.venv/
+dist/
+build/linkpilot/
+logs/
+updates/
+*.backup/
+__pycache__/
+*.pyc
+.coverage
+coverage.xml
+.pytest_cache/
+benchmark_step.png
+benchmark_overlay.png

@@ -1,0 +1,12 @@
+<!doctype html>
+<title>Multi-step Wizard</title>
+<h1>Wizard</h1>
+<section id="step1">
+  <p>Step 1</p>
+  <button onclick="step1.hidden=true;step2.hidden=false">Continue</button>
+</section>
+<section id="step2" hidden>
+  <p>Step 2</p>
+  <label>City <input name="city" placeholder="City"></label>
+  <button onclick="location.href='success.html'">Finish</button>
+</section>

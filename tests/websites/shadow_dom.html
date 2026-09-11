@@ -1,0 +1,8 @@
+<!doctype html>
+<title>Shadow DOM</title>
+<h1>Shadow Host</h1>
+<div id="host"></div>
+<script>
+const root = document.querySelector("#host").attachShadow({mode:"open"});
+root.innerHTML = `<button aria-label="Shadow continue">Continue</button>`;
+</script>
