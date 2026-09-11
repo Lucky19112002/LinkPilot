@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import sys
+from PyInstaller.utils.hooks import copy_metadata
 
 root = Path.cwd()
 icon = root / "assets" / ("logo.icns" if sys.platform == "darwin" else "logo.ico")
@@ -14,7 +15,7 @@ a = Analysis(
     datas=[
         (str(root / "config.json"), "."),
         (str(root / "requirements.txt"), "."),
-    ],
+    ] + copy_metadata("imageio"),
     hiddenimports=["keyring.backends.macOS", "keyring.backends.Windows"],
     hookspath=[],
     hooksconfig={},
