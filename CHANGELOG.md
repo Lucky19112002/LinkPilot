@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- Fix macOS bundle version metadata so Finder and LaunchServices see the correct app version.
+
 ## 1.0.3
 
 - Show missing setup components directly on Dashboard.

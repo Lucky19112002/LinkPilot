@@ -3,6 +3,7 @@
 from pathlib import Path
 import sys
 from PyInstaller.utils.hooks import copy_metadata
+from version import VERSION
 
 root = Path.cwd()
 icon = root / "assets" / ("logo.icns" if sys.platform == "darwin" else "logo.ico")
@@ -54,4 +55,9 @@ if sys.platform == "darwin":
         name="LinkPilot.app",
         icon=icon_arg,
         bundle_identifier="com.linkpilot.app",
+        version=VERSION,
+        info_plist={
+            "CFBundleShortVersionString": VERSION,
+            "CFBundleVersion": VERSION,
+        },
     )
