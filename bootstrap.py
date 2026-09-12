@@ -16,6 +16,27 @@ from ollama_manager import OllamaManager
 REQUIRED_PACKAGES = ("PySide6", "playwright", "requests", "keyring", "cryptography", "psutil", "PIL", "imageio")
 
 
+def _run_logged(command: list[str], log=lambda message: None) -> int:
+    log("Running: " + " ".join(command))
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    assert process.stdout is not None
+    for line in process.stdout:
+        line = line.strip()
+        if line:
+            log(line)
+    return process.wait()
+
+
+def _playwright_command(*args: str) -> list[str]:
+    try:
+        from playwright._impl._driver import compute_driver_executable
+
+        node, cli = compute_driver_executable()
+        return [node, cli, *args]
+    except Exception:
+        return [sys.executable, "-m", "playwright", *args]
+
+
 def check_python() -> bool:
     return sys.version_info >= (3, 11)
 
@@ -24,8 +45,10 @@ def in_venv() -> bool:
     return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
 
 
-def install_requirements() -> None:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+def install_requirements(log=lambda message: None) -> bool:
+    if getattr(sys, "frozen", False):
+        return packages_ok()
+    return _run_logged([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], log) == 0
 
 
 def packages_ok() -> bool:
@@ -64,14 +87,14 @@ def wait_for_ollama_server(config: Config, timeout: int = 60) -> bool:
     return False
 
 
-def install_chromium() -> None:
-    subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
+def install_chromium(log=lambda message: None) -> bool:
+    return _run_logged(_playwright_command("install", "chromium"), log) == 0
 
 
 def chromium_ok() -> bool:
     try:
         subprocess.check_call(
-            [sys.executable, "-m", "playwright", "install", "--dry-run", "chromium"],
+            _playwright_command("install", "--dry-run", "chromium"),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -99,9 +122,9 @@ def active_model_ok(config: Config | None = None) -> bool:
         return False
 
 
-def download_active_model(config: Config | None = None) -> None:
+def download_active_model(config: Config | None = None, log=lambda message: None) -> bool:
     config = config or load_config()
-    OllamaManager(config).download_model(config.active_model)
+    return _run_logged(["ollama", "pull", config.active_model], log) == 0
 
 
 def complete_first_launch() -> None:
@@ -140,11 +163,11 @@ def run_first_launch(log=lambda message: None, cancel=lambda: False) -> bool:
     config = load_config()
     steps = (
         ("Checking Python", lambda: check_python()),
-        ("Checking packages", lambda: packages_ok() or (install_requirements() is None and packages_ok())),
+        ("Checking packages", lambda: packages_ok() or (install_requirements(log) and packages_ok())),
         ("Checking Ollama", lambda: check_ollama() or (install_ollama() is None and wait_for_ollama_install())),
         ("Starting Ollama server", lambda: start_ollama() is None and wait_for_ollama_server(config)),
-        ("Installing Chromium", lambda: chromium_ok() or (install_chromium() is None and chromium_ok())),
-        ("Verifying active model", lambda: active_model_ok(config) or (download_active_model(config) is None and active_model_ok(config))),
+        ("Installing Chromium", lambda: chromium_ok() or (install_chromium(log) and chromium_ok())),
+        ("Verifying active model", lambda: active_model_ok(config) or (download_active_model(config, log) and active_model_ok(config))),
     )
     for label, step in steps:
         if cancel():

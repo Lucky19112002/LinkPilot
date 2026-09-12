@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import webbrowser
+
 from PySide6.QtCore import QObject, QThread, QTimer, Signal
 from PySide6.QtWidgets import QLabel, QPlainTextEdit, QPushButton, QVBoxLayout, QWidget
 
@@ -34,7 +36,7 @@ class SetupWizard(QWidget):
         start_ollama = QPushButton("Start Ollama Server")
         start_ollama.clicked.connect(self.start_ollama)
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Setup"))
+        layout.addWidget(QLabel("First-launch setup progress"))
         layout.addWidget(run)
         layout.addWidget(cancel)
         layout.addWidget(start_ollama)
