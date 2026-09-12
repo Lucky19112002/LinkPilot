@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Show missing setup components directly on Dashboard.
+- Show LinkPilot, Ollama, browser, and Playwright-related processes running on the machine.
+
 ## 1.0.2
 
 - Enable GitHub release update checks by default.

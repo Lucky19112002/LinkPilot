@@ -4,7 +4,7 @@ from PySide6.QtCore import QThread, QTimer
 from PySide6.QtWidgets import QLabel, QPlainTextEdit, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from config import Config
-from health import health_warnings
+from health import health_warnings, missing_components, running_linkpilot_processes
 from ollama_manager import OllamaManager
 from updater import Updater
 from worker import LinkPilotWorker
@@ -26,6 +26,8 @@ class DashboardPage(QWidget):
         self.metrics = QLabel("Metrics: -")
         self.update_status = QLabel("Updater: checking")
         self.health = QLabel("Health: checking")
+        self.missing = QLabel("Missing: checking")
+        self.processes = QLabel("Running processes: checking")
         self.step_progress = QProgressBar()
         self.step_progress.setRange(0, config.max_ai_actions)
         self.queue_table = QTableWidget(0, 3)
@@ -58,6 +60,8 @@ class DashboardPage(QWidget):
             self.metrics,
             self.update_status,
             self.health,
+            self.missing,
+            self.processes,
             self.step_progress,
             self.queue_table,
             self.ollama,
@@ -74,7 +78,7 @@ class DashboardPage(QWidget):
         QTimer.singleShot(0, self.check_update)
         self.health_timer = QTimer(self)
         self.health_timer.timeout.connect(self.check_health)
-        self.health_timer.start(10000)
+        self.health_timer.start(5000)
         QTimer.singleShot(0, self.check_health)
 
     def _ollama_status(self) -> str:
@@ -163,6 +167,10 @@ class DashboardPage(QWidget):
     def check_health(self) -> None:
         warnings = health_warnings(self.config)
         self.health.setText("Health: OK" if not warnings else "Health: " + " | ".join(warnings))
+        missing = missing_components(self.config)
+        self.missing.setText("Missing: none" if not missing else "Missing: " + " | ".join(missing))
+        processes = running_linkpilot_processes()
+        self.processes.setText("Running processes: none" if not processes else "Running processes: " + " | ".join(processes))
 
     def cleanup(self) -> None:
         if self.worker:
