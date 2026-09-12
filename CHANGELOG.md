@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+- Enable GitHub release update checks by default.
+- Migrate older blank update URLs to the official LinkPilot release feed.
+
 ## 1.0.1
 
 - Show first-launch setup progress while Chromium and Ollama models download.

@@ -25,7 +25,7 @@ class Config:
     max_ai_actions: int = 15
     recovery_attempts: int = 3
     human_typing: bool = True
-    update_url: str = ""
+    update_url: str = "https://api.github.com/repos/Lucky19112002/LinkPilot/releases/latest"
     worker_name: str = ""
     worker_id: str = ""
     location: str = ""
@@ -80,6 +80,8 @@ def load_config(path: Path = CONFIG_PATH) -> Config:
         path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     defaults = asdict(Config())
     defaults.update(data)
+    if not defaults.get("update_url"):
+        defaults["update_url"] = Config().update_url
     return Config(**defaults)
 
 
