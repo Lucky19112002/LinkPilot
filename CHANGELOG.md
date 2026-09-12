@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Show first-launch setup progress while Chromium and Ollama models download.
+- Fix packaged Playwright Chromium install command.
+- Fix Setup page Ollama installer link on fresh systems.
+
 ## 1.0.0 RC1
 
 - Native macOS and Windows packaging scripts.
