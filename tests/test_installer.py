@@ -29,6 +29,21 @@ def test_verify_environment_keys() -> None:
     assert {"python", "venv", "packages", "ollama", "ollama_server", "selected_model", "chromium", "internet"} <= keys
 
 
+def test_first_launch_starts_server_before_model_check(monkeypatch) -> None:
+    calls = []
+    monkeypatch.setattr(bootstrap, "load_config", lambda: Config())
+    monkeypatch.setattr(bootstrap, "check_python", lambda: True)
+    monkeypatch.setattr(bootstrap, "packages_ok", lambda: True)
+    monkeypatch.setattr(bootstrap, "ensure_ollama_installed", lambda log: calls.append("installed") or True)
+    monkeypatch.setattr(bootstrap, "ensure_ollama_server", lambda config, log: calls.append("server") or True)
+    monkeypatch.setattr(bootstrap, "chromium_ok", lambda: True)
+    monkeypatch.setattr(bootstrap, "ensure_active_model", lambda config, log: calls.append("model") or True)
+    monkeypatch.setattr(bootstrap, "complete_first_launch", lambda: calls.append("complete"))
+
+    assert bootstrap.run_first_launch()
+    assert calls == ["installed", "server", "model", "complete"]
+
+
 def test_launch_agent_path(monkeypatch) -> None:
     if sys.platform != "darwin":
         return

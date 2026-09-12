@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.7
+
+- Allow insecure HTTPS for API servers with invalid certificates.
+
+## 1.0.6
+
+- Detect Ollama from macOS app launches that do not inherit Terminal PATH.
+- Add Dashboard setup repair progress and command output for Chromium/model downloads.
+- Open Dashboard on first launch and run setup there so progress is visible immediately.
+- Fix packaged default config so fresh installs do not skip first-launch setup.
+
+## 1.0.5
+
+- Prevent startup crash when GitHub update checks fail because of certificate or network errors.
+
 ## 1.0.4
 
 - Fix macOS bundle version metadata so Finder and LaunchServices see the correct app version.

@@ -26,6 +26,8 @@ class SettingsPage(QWidget):
         self.credential_id = QLineEdit(config.credential_id)
         self.password = QLineEdit(SecureStore().get_password(config.credential_id))
         self.password.setEchoMode(QLineEdit.Password)
+        self.allow_insecure_https = QCheckBox()
+        self.allow_insecure_https.setChecked(config.allow_insecure_https)
         self.worker_name = QLineEdit(config.worker_name)
         self.worker_id = QLineEdit(config.worker_id)
         self.location = QLineEdit(config.location)
@@ -65,6 +67,7 @@ class SettingsPage(QWidget):
             ("API username", self.username),
             ("Credential ID", self.credential_id),
             ("API password", self.password),
+            ("Allow insecure HTTPS", self.allow_insecure_https),
             ("Worker Name", self.worker_name),
             ("Worker ID", self.worker_id),
             ("Location", self.location),
@@ -88,6 +91,7 @@ class SettingsPage(QWidget):
         self.config.api_base_url = self.api_base.text()
         self.config.api_username = self.username.text()
         self.config.credential_id = self.credential_id.text() or "default"
+        self.config.allow_insecure_https = self.allow_insecure_https.isChecked()
         SecureStore().set_password(self.password.text(), self.config.credential_id)
         self.config.worker_name = self.worker_name.text()
         self.config.worker_id = self.worker_id.text()

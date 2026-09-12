@@ -3,6 +3,7 @@ from __future__ import annotations
 from urllib.parse import urljoin
 
 import requests
+from urllib3.exceptions import InsecureRequestWarning
 
 from config import Config
 from secure_store import SecureStore
@@ -12,6 +13,9 @@ class ApiClient:
     def __init__(self, config: Config):
         self.config = config
         self.session = requests.Session()
+        self.session.verify = not config.allow_insecure_https
+        if config.allow_insecure_https:
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
         self.store = SecureStore()
 
     def _url(self, path: str) -> str:

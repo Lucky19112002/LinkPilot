@@ -10,7 +10,7 @@ from importlib.metadata import PackageNotFoundError, version
 from importlib.util import find_spec
 
 from config import Config, load_config, save_config
-from ollama_manager import OllamaManager
+from ollama_manager import OllamaManager, ollama_executable, start_detached
 
 
 REQUIRED_PACKAGES = ("PySide6", "playwright", "requests", "keyring", "cryptography", "psutil", "PIL", "imageio")
@@ -56,7 +56,7 @@ def packages_ok() -> bool:
 
 
 def check_ollama() -> bool:
-    return shutil.which("ollama") is not None
+    return ollama_executable() is not None
 
 
 def install_ollama() -> None:
@@ -73,8 +73,9 @@ def wait_for_ollama_install(timeout: int = 600) -> bool:
 
 
 def start_ollama() -> None:
-    if check_ollama():
-        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    exe = ollama_executable()
+    if exe:
+        start_detached([exe, "serve"])
 
 
 def wait_for_ollama_server(config: Config, timeout: int = 60) -> bool:
@@ -85,6 +86,31 @@ def wait_for_ollama_server(config: Config, timeout: int = 60) -> bool:
             return True
         time.sleep(1)
     return False
+
+
+def ensure_ollama_installed(log=lambda message: None) -> bool:
+    exe = ollama_executable()
+    if exe:
+        log(f"Ollama installed: {exe}")
+        return True
+    log("Ollama missing: opening official download page")
+    install_ollama()
+    ok = wait_for_ollama_install()
+    if ok:
+        log(f"Ollama installed: {ollama_executable()}")
+    return ok
+
+
+def ensure_ollama_server(config: Config, log=lambda message: None) -> bool:
+    manager = OllamaManager(config)
+    if manager.is_running():
+        log(f"Ollama server running: {config.ollama_base_url}")
+        return True
+    log("Ollama server stopped: starting server")
+    start_ollama()
+    ok = wait_for_ollama_server(config)
+    log(f"Ollama server {'ready' if ok else 'failed to start'}: {config.ollama_base_url}")
+    return ok
 
 
 def install_chromium(log=lambda message: None) -> bool:
@@ -122,9 +148,37 @@ def active_model_ok(config: Config | None = None) -> bool:
         return False
 
 
+def ensure_active_model(config: Config | None = None, log=lambda message: None) -> bool:
+    config = config or load_config()
+    manager = OllamaManager(config)
+    if not manager.is_running():
+        log("Cannot check model until Ollama server is running")
+        return False
+    try:
+        models = manager.list_models()
+    except Exception as exc:
+        log(f"Model list failed: {exc}")
+        return False
+    log("Installed models: " + (", ".join(models) if models else "none"))
+    if config.active_model in models:
+        log(f"Active model configured: {config.active_model}")
+        return True
+    log(f"Model missing: downloading {config.active_model}")
+    if not download_active_model(config, log):
+        return False
+    try:
+        models = manager.list_models()
+    except Exception as exc:
+        log(f"Model recheck failed: {exc}")
+        return False
+    ok = config.active_model in models
+    log(f"Active model {'configured' if ok else 'still missing'}: {config.active_model}")
+    return ok
+
+
 def download_active_model(config: Config | None = None, log=lambda message: None) -> bool:
     config = config or load_config()
-    return _run_logged(["ollama", "pull", config.active_model], log) == 0
+    return _run_logged([ollama_executable() or "ollama", "pull", config.active_model], log) == 0
 
 
 def complete_first_launch() -> None:
@@ -164,10 +218,10 @@ def run_first_launch(log=lambda message: None, cancel=lambda: False) -> bool:
     steps = (
         ("Checking Python", lambda: check_python()),
         ("Checking packages", lambda: packages_ok() or (install_requirements(log) and packages_ok())),
-        ("Checking Ollama", lambda: check_ollama() or (install_ollama() is None and wait_for_ollama_install())),
-        ("Starting Ollama server", lambda: start_ollama() is None and wait_for_ollama_server(config)),
+        ("Checking Ollama", lambda: ensure_ollama_installed(log)),
+        ("Starting Ollama server", lambda: ensure_ollama_server(config, log)),
         ("Installing Chromium", lambda: chromium_ok() or (install_chromium(log) and chromium_ok())),
-        ("Verifying active model", lambda: active_model_ok(config) or (download_active_model(config, log) and active_model_ok(config))),
+        ("Verifying active model", lambda: ensure_active_model(config, log)),
     )
     for label, step in steps:
         if cancel():

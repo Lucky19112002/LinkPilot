@@ -1,5 +1,5 @@
 #define MyAppName "LinkPilot"
-#define MyAppVersion "1.0.4"
+#define MyAppVersion "1.0.7"
 #define MyAppExeName "LinkPilot.exe"
 
 [Setup]

@@ -7,3 +7,8 @@ def test_worker_identity_attached():
     data = client.with_worker({"x": 1})
     assert data["worker_id"] == "W1"
     assert data["worker_name"] == "Desk"
+
+
+def test_api_client_can_disable_tls_verification():
+    client = ApiClient(Config(allow_insecure_https=True))
+    assert client.session.verify is False

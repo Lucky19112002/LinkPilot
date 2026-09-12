@@ -20,6 +20,7 @@ class Config:
     api_base_url: str = "https://swetpatel.bsite.net"
     api_username: str = ""
     credential_id: str = "default"
+    allow_insecure_https: bool = True
     headless: bool = False
     wait_after_task: int = 30
     max_ai_actions: int = 15
@@ -33,7 +34,7 @@ class Config:
     launch_on_login: bool = False
     first_launch_complete: bool = False
     build_number: str = "100"
-    github_url: str = "https://github.com/linkpilot/linkpilot"
+    github_url: str = "https://github.com/Lucky19112002/LinkPilot"
     keep_logs_days: int = 30
     max_logs_gb: float = 5.0
     browser_width: int = 1440

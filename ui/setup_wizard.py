@@ -41,10 +41,7 @@ class SetupWizard(QWidget):
         layout.addWidget(cancel)
         layout.addWidget(start_ollama)
         layout.addWidget(self.output)
-        if not load_config().first_launch_complete:
-            QTimer.singleShot(0, self.run_checks)
-        else:
-            QTimer.singleShot(0, self.show_status)
+        QTimer.singleShot(0, self.show_status)
 
     def run_checks(self) -> None:
         if self.thread and self.thread.isRunning():

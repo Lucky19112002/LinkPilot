@@ -1,13 +1,26 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QThread, QTimer
+from PySide6.QtCore import QObject, QThread, QTimer, Signal
 from PySide6.QtWidgets import QLabel, QPlainTextEdit, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
+from bootstrap import run_first_launch
 from config import Config
 from health import health_warnings, missing_components, running_linkpilot_processes
 from ollama_manager import OllamaManager
 from updater import Updater
 from worker import LinkPilotWorker
+
+
+class SetupStatusWorker(QObject):
+    log = Signal(str)
+    finished = Signal(bool)
+
+    def __init__(self):
+        super().__init__()
+        self.cancelled = False
+
+    def run(self) -> None:
+        self.finished.emit(run_first_launch(self.log.emit, lambda: self.cancelled))
 
 
 class DashboardPage(QWidget):
@@ -28,6 +41,7 @@ class DashboardPage(QWidget):
         self.health = QLabel("Health: checking")
         self.missing = QLabel("Missing: checking")
         self.processes = QLabel("Running processes: checking")
+        self.setup_status = QLabel("Setup: idle")
         self.step_progress = QProgressBar()
         self.step_progress.setRange(0, config.max_ai_actions)
         self.queue_table = QTableWidget(0, 3)
@@ -41,12 +55,16 @@ class DashboardPage(QWidget):
         self.pause = QPushButton("Pause Queue")
         self.retry = QPushButton("Retry Selected")
         self.skip = QPushButton("Skip Selected")
+        self.run_setup = QPushButton("Run Setup / Repair Missing")
         self.stop.setEnabled(False)
         self.start.clicked.connect(self.start_worker)
         self.stop.clicked.connect(self.stop_worker)
         self.pause.clicked.connect(self.pause_queue)
         self.retry.clicked.connect(self.retry_selected)
         self.skip.clicked.connect(self.skip_selected)
+        self.run_setup.clicked.connect(self.start_setup)
+        self.setup_thread: QThread | None = None
+        self.setup_worker: SetupStatusWorker | None = None
 
         layout = QVBoxLayout(self)
         for widget in (
@@ -62,6 +80,7 @@ class DashboardPage(QWidget):
             self.health,
             self.missing,
             self.processes,
+            self.setup_status,
             self.step_progress,
             self.queue_table,
             self.ollama,
@@ -71,6 +90,7 @@ class DashboardPage(QWidget):
             self.pause,
             self.retry,
             self.skip,
+            self.run_setup,
             self.logs,
         ):
             layout.addWidget(widget)
@@ -80,6 +100,8 @@ class DashboardPage(QWidget):
         self.health_timer.timeout.connect(self.check_health)
         self.health_timer.start(5000)
         QTimer.singleShot(0, self.check_health)
+        if not config.first_launch_complete:
+            QTimer.singleShot(0, self.start_setup)
 
     def _ollama_status(self) -> str:
         return "Ollama: Connected" if OllamaManager(self.config).is_running() else "Ollama: Not connected"
@@ -108,6 +130,31 @@ class DashboardPage(QWidget):
         self.thread.start()
         self.start.setEnabled(False)
         self.stop.setEnabled(True)
+
+    def start_setup(self) -> None:
+        if self.setup_thread and self.setup_thread.isRunning():
+            return
+        self.setup_status.setText("Setup: running")
+        self.logs.appendPlainText("Setup started")
+        self.setup_thread = QThread()
+        self.setup_worker = SetupStatusWorker()
+        self.setup_worker.moveToThread(self.setup_thread)
+        self.setup_thread.started.connect(self.setup_worker.run)
+        self.setup_worker.log.connect(self.setup_log)
+        self.setup_worker.finished.connect(self.setup_finished)
+        self.setup_worker.finished.connect(self.setup_thread.quit)
+        self.setup_thread.finished.connect(lambda: setattr(self, "setup_thread", None))
+        self.setup_thread.start()
+
+    def setup_log(self, text: str) -> None:
+        self.setup_status.setText(f"Setup: {text}")
+        self.logs.appendPlainText(f"Setup: {text}")
+        self.check_health()
+
+    def setup_finished(self, ok: bool) -> None:
+        self.setup_status.setText("Setup: complete" if ok else "Setup: failed or cancelled")
+        self.logs.appendPlainText(self.setup_status.text())
+        self.check_health()
 
     def stop_worker(self) -> None:
         if self.worker:
@@ -156,7 +203,7 @@ class DashboardPage(QWidget):
 
     def check_update(self) -> None:
         try:
-            status = Updater(self.config.update_url).check()
+            status = Updater(self.config.update_url, self.config.allow_insecure_https).check()
             text = status["status"]
             if status.get("latest"):
                 text += f" {status['latest']}"
@@ -173,6 +220,11 @@ class DashboardPage(QWidget):
         self.processes.setText("Running processes: none" if not processes else "Running processes: " + " | ".join(processes))
 
     def cleanup(self) -> None:
+        if self.setup_worker:
+            self.setup_worker.cancelled = True
+        if self.setup_thread and self.setup_thread.isRunning():
+            self.setup_thread.quit()
+            self.setup_thread.wait(3000)
         if self.worker:
             self.worker.stop()
         if self.thread and self.thread.isRunning():

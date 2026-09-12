@@ -32,7 +32,7 @@ class DiagnosticsPage(QWidget):
             ("Chromium", chromium_ok(), install_chromium),
             ("Active Model", active_model_ok(self.config), lambda: manager.download_model(self.config.active_model)),
             ("API", self.api_ok(), lambda: ApiClient(self.config).login()),
-            ("Update Service", Updater(self.config.update_url).check()["status"] in {"disabled", "current", "available"}, lambda: Updater(self.config.update_url).check()),
+            ("Update Service", Updater(self.config.update_url, self.config.allow_insecure_https).check()["status"] in {"disabled", "current", "available", "unavailable"}, lambda: Updater(self.config.update_url, self.config.allow_insecure_https).check()),
         ]
 
     def api_ok(self) -> bool:

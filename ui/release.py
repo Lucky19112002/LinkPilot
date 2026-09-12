@@ -37,7 +37,7 @@ class ReleasePage(QWidget):
             "API": self.api_ok(),
             "Worker": True,
             "Telemetry": bool(Telemetry(self.config).payload("idle")),
-            "Auto Update": Updater(self.config.update_url).check()["status"] in {"disabled", "current", "available"},
+            "Auto Update": Updater(self.config.update_url, self.config.allow_insecure_https).check()["status"] in {"disabled", "current", "available", "unavailable"},
             "Launch on Login": True,
         }
         lines = [f"{'OK' if ok else 'Missing'} {name}" for name, ok in checks.items()]

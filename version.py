@@ -1,3 +1,3 @@
 APP_NAME = "LinkPilot"
-VERSION = "1.0.4"
-BUILD = 5
+VERSION = "1.0.7"
+BUILD = 8

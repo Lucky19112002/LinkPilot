@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         tabs.addTab(AboutPage(self.config), "About")
         self.setCentralWidget(tabs)
         if not self.config.first_launch_complete:
-            tabs.setCurrentIndex(4)
+            tabs.setCurrentIndex(0)
 
     def closeEvent(self, event) -> None:
         tabs = self.centralWidget()

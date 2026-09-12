@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import ssl
 from hashlib import sha256
 from pathlib import Path
 from urllib.request import urlopen
@@ -21,14 +22,19 @@ def semver(value: str) -> tuple[int, int, int]:
 
 
 class Updater:
-    def __init__(self, update_url: str = ""):
+    def __init__(self, update_url: str = "", allow_insecure_https: bool = False):
         self.update_url = update_url
+        self.allow_insecure_https = allow_insecure_https
 
     def check(self) -> dict:
         if not self.update_url:
             return {"status": "disabled", "version": VERSION}
-        with urlopen(self.update_url, timeout=10) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        try:
+            context = ssl._create_unverified_context() if self.allow_insecure_https else ssl.create_default_context()
+            with urlopen(self.update_url, timeout=10, context=context) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            return {"status": "unavailable", "version": VERSION, "error": str(exc)}
         latest = str(payload.get("version") or payload.get("tag_name") or "")
         return {
             "status": "available" if semver(latest) > semver(VERSION) else "current",
@@ -43,7 +49,8 @@ class Updater:
             shutil.rmtree(target)
         target.mkdir(parents=True, exist_ok=True)
         path = target / (Path(url.split("?")[0]).name or "update.bin")
-        with urlopen(url, timeout=60) as response:
+        context = ssl._create_unverified_context() if self.allow_insecure_https else ssl.create_default_context()
+        with urlopen(url, timeout=60, context=context) as response:
             total = int(response.headers.get("content-length", 0))
             done = 0
             with path.open("wb") as file:
